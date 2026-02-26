@@ -112,6 +112,7 @@ def receive_data():
     # Check for alerts
     check_thresholds(data)
     
+    print(f"📥 Received data from ESP32: {data}")
     return jsonify({"msg": "Data saved"}), 200
 
 @app.route('/api/readings', methods=['GET'])

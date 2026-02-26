@@ -697,6 +697,8 @@
     let prevData = { temp: 0, hum: 0, air: 0, co2: 0, nh3: 0, ben: 0, tot: 0, cooler: false };
     let chart = null;
     let sensorHistory = { temp: [], hum: [], co2: [], nh3: [], ben: [], times: [] };
+    let pollInterval;
+    let historyInterval;
 
     // AUTH STATE
     let isLoginMode = true;
@@ -1013,6 +1015,7 @@
 
       } catch (e) {
         console.error('Data fetch error:', e);
+        showDashboardError('Data Fetch Error: ' + e.message);
         Object.values(els).forEach(e => {
           e.value.textContent = '--';
           e.status.textContent = 'Offline';
@@ -1022,6 +1025,18 @@
         globalStatus.style.background = 'linear-gradient(90deg,#6b7280,#4b5563)';
         lastUpdatedEl.textContent = 'ESP32 Offline';
       }
+    }
+
+    function showDashboardError(msg) {
+      const errEl = document.getElementById('dashboard-error') || (() => {
+        const el = document.createElement('div');
+        el.id = 'dashboard-error';
+        el.style.cssText = 'background:#ef4444;color:white;padding:10px;text-align:center;position:fixed;top:4px;left:0;right:0;z-index:2000;font-size:0.8rem';
+        document.body.appendChild(el);
+        return el;
+      })();
+      errEl.textContent = msg;
+      errEl.style.display = 'block';
     }
 
     async function updateHistory() {
@@ -1049,9 +1064,6 @@
       }
     }
 
-    // Polling wrapper
-    let pollInterval;
-    let historyInterval;
     function startPolling() {
       if (pollInterval) clearInterval(pollInterval);
       if (historyInterval) clearInterval(historyInterval);

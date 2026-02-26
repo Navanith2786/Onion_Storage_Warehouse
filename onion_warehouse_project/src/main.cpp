@@ -59,6 +59,7 @@ void sendDataToBackend() {
     doc["nh3"] = (int)nh3_ppm;
     doc["benzene"] = (int)benzene_ppm;
     doc["total"] = (int)total_ppm;
+    doc["cooler"] = coolerOn;
 
     String requestBody;
     serializeJson(doc, requestBody);
