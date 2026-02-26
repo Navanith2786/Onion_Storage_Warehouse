@@ -1033,6 +1033,11 @@
         });
         const readings = await res.json();
 
+        if (!Array.isArray(readings)) {
+          console.warn('History is not yet available');
+          return;
+        }
+
         sensorHistory.times = readings.map(r => r.time);
         sensorHistory.temp = readings.map(r => r.temp);
         sensorHistory.hum = readings.map(r => r.hum);
