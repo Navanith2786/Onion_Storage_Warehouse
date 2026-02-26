@@ -103,7 +103,8 @@ def receive_data():
         co2=data.get('co2'),
         nh3=data.get('nh3'),
         ben=data.get('benzene'),
-        total_ppm=data.get('total')
+        total_ppm=data.get('total'),
+        cooler_on=data.get('cooler', False)
     )
     db.session.add(reading)
     db.session.commit()
