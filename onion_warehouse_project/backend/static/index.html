@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>🧅 Onion Pro</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    body {
+      font-family: system-ui;
+      background: linear-gradient(135deg, #FADADD 0%, #F8D7DA 30%, #F5D0D4 70%, #FADADD 100%);
+      min-height: 100vh;
+      color: #5a2e3a;
+      overflow: hidden
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      filter: blur(5px);
+      transition: filter 0.3s ease
+    }
+
+    .container.logged-in {
+      filter: none
+    }
+
+    .global-status-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #22c55e 0%, #f59e0b 50%, #ef4444 100%);
+      z-index: 1000;
+      transition: all 0.3s ease
+    }
+
+    .header {
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 20px;
+      margin: 10px 0 20px 0;
+      text-align: center;
+      border: 1px solid rgba(250, 218, 221, 0.6);
+      box-shadow: 0 15px 35px rgba(250, 218, 221, 0.3)
+    }
+
+    .title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 700;
+      background: linear-gradient(135deg, #FF6B9D, #FF8FBF);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: #5a2e3a;
+      font-weight: 500;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5)
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      flex: 1;
+      padding-top: 10px
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(25px);
+      border-radius: 20px;
+      padding: 14px 20px;
+      border: 1px solid rgba(250, 218, 221, 0.6);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 15px 35px rgba(250, 218, 221, 0.4);
+      cursor: pointer
+    }
+
+    .card:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 25px 50px rgba(250, 218, 221, 0.5)
+    }
+
+    .card.active {
+      transform: scale(1.05) !important;
+      box-shadow: 0 30px 60px rgba(255, 107, 157, 0.4) !important
+    }
+
+    .card-icon {
+      font-size: 1.6rem;
+      margin-bottom: 6px;
+      display: block
+    }
+
+    .card-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #5a2e3a;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px
+    }
+
+    .card-value {
+      font-size: clamp(1.4rem, 5vw, 2.2rem);
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #3a1f2b
+    }
+
+    .card-value.animate {
+      animation: countUp 1.5s ease-out
+    }
+
+    .trend-arrow {
+      display: inline-block;
+      margin-left: 5px;
+      font-size: 1.2rem
+    }
+
+    .trend-up {
+      color: #22c55e;
+      animation: bounceUp 1s ease-in-out
+    }
+
+    .trend-down {
+      color: #ef4444;
+      animation: bounceDown 1s ease-in-out
+    }
+
+    .status-badge {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase
+    }
+
+    .status-good {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e
+    }
+
+    .status-warning {
+      background: rgba(245, 158, 11, 0.2);
+      color: #f59e0b
+    }
+
+    .status-danger {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      animation: pulseDanger 2s infinite
+    }
+
+    /* Gas Details Modal */
+    .gas-details {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 2000;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 20px
+    }
+
+    .gas-details.active {
+      display: flex;
+      animation: fadeIn 0.3s ease
+    }
+
+    .gas-details-content {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(30px);
+      border-radius: 24px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      border: 1px solid rgba(250, 218, 221, 0.6);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5)
+    }
+
+    .gas-details-header {
+      padding: 24px 24px 0;
+      text-align: center;
+      border-bottom: 1px solid rgba(250, 218, 221, 0.3)
+    }
+
+    .gas-details-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #3a1f2b;
+      margin-bottom: 8px
+    }
+
+    .gas-details-close {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      font-size: 2rem;
+      cursor: pointer;
+      color: #5a2e3a;
+      font-weight: 700
+    }
+
+    .gas-gas {
+      padding: 20px 24px;
+      border-bottom: 1px solid rgba(250, 218, 221, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center
+    }
+
+    .gas-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #5a2e3a
+    }
+
+    .gas-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #3a1f2b
+    }
+
+    /* Graph Modal */
+    .graph-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 3000;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 20px
+    }
+
+    .graph-modal.active {
+      display: flex;
+      animation: fadeIn 0.3s ease
+    }
+
+    .graph-container {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(40px);
+      border-radius: 24px;
+      max-width: 900px;
+      width: 95%;
+      max-height: 85vh;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.2)
+    }
+
+    .graph-header {
+      padding: 24px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2)
+    }
+
+    .graph-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: white
+    }
+
+    .graph-close {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      font-size: 2.5rem;
+      cursor: pointer;
+      color: white;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    #gasChart {
+      width: 100%;
+      height: 400px
+    }
+
+    /* Auth Overlay */
+    .auth-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, #FADADD 0%, #F8D7DA 100%);
+      z-index: 9999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      transition: opacity 0.5s ease
+    }
+
+    .auth-overlay.hidden {
+      opacity: 0;
+      pointer-events: none
+    }
+
+    .auth-box {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(40px);
+      -webkit-backdrop-filter: blur(40px);
+      border-radius: 30px;
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      text-align: center
+    }
+
+    .auth-title {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #FF6B9D, #FF8FBF);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent
+    }
+
+    .auth-subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 0.9rem
+    }
+
+    .auth-input {
+      width: 100%;
+      padding: 15px 20px;
+      margin-bottom: 15px;
+      border: none;
+      border-radius: 15px;
+      background: rgba(255, 255, 255, 0.8);
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+      font-size: 1rem;
+      color: #3a1f2b;
+      outline: none;
+      transition: all 0.3s
+    }
+
+    .auth-input:focus {
+      background: white;
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05), 0 0 0 2px #FF8FBF
+    }
+
+    .auth-btn {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 15px;
+      background: linear-gradient(135deg, #FF6B9D, #FF8FBF);
+      color: white;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-top: 10px
+    }
+
+    .auth-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(255, 107, 157, 0.3)
+    }
+
+    .auth-btn:active {
+      transform: translateY(0)
+    }
+
+    .auth-toggle {
+      margin-top: 20px;
+      font-size: 0.9rem;
+      color: #666;
+      cursor: pointer
+    }
+
+    .auth-toggle b {
+      color: #FF6B9D
+    }
+
+    .password-wrapper {
+      position: relative;
+      width: 100%
+    }
+
+    .password-wrapper .auth-input {
+      padding-right: 50px
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: #999;
+      padding: 5px;
+      transition: color 0.2s;
+      line-height: 1
+    }
+
+    .password-toggle:hover {
+      color: #FF6B9D
+    }
+
+    .google-btn {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      border-radius: 15px;
+      background: white;
+      color: #444;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 5px
+    }
+
+    .google-btn:hover {
+      background: #f8f8f8;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transform: translateY(-1px)
+    }
+
+    .google-btn:active {
+      transform: translateY(0)
+    }
+
+    .google-btn svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 18px 0;
+      gap: 12px;
+      color: #aaa;
+      font-size: 0.8rem;
+      font-weight: 500
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #ddd
+    }
+
+    .auth-error {
+      color: #ef4444;
+      margin-bottom: 15px;
+      font-size: 0.9rem;
+      display: none
+    }
+
+    .footer {
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid rgba(250, 218, 221, 0.5);
+      margin-top: auto
+    }
+
+    @keyframes countUp {
+      0% {
+        transform: scale(1.2);
+        opacity: 0
+      }
+
+      50% {
+        transform: scale(1.1)
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 1
+      }
+    }
+
+    @keyframes bounceUp {
+
+      0%,
+      100% {
+        transform: translateY(0)
+      }
+
+      50% {
+        transform: translateY(-5px)
+      }
+    }
+
+    @keyframes bounceDown {
+
+      0%,
+      100% {
+        transform: translateY(0)
+      }
+
+      50% {
+        transform: translateY(5px)
+      }
+    }
+
+    @keyframes pulseDanger {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: 0.7
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0
+      }
+
+      to {
+        opacity: 1
+      }
+    }
+
+    @media(max-width:768px) {
+      .cards-grid {
+        grid-template-columns: 1fr;
+        gap: 16px
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Auth Overlay -->
+  <div class="auth-overlay" id="authOverlay">
+    <div class="auth-box">
+      <div class="auth-title">Welcome Back</div>
+      <div class="auth-subtitle">Login to access Onion Warehouse Pro</div>
+      <div class="auth-error" id="authError">Invalid credentials</div>
+
+      <input type="text" class="auth-input" id="username" placeholder="Username">
+      <div class="password-wrapper">
+        <input type="password" class="auth-input" id="password" placeholder="Password">
+        <button type="button" class="password-toggle" id="passwordToggle" title="Show password">👁️</button>
+      </div>
+
+      <button class="auth-btn" id="authBtn">LOGIN</button>
+
+      <div class="divider">or continue with</div>
+
+      <button class="google-btn" id="googleBtn" type="button">
+        <svg viewBox="0 0 24 24">
+          <path fill="#4285F4"
+            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" />
+          <path fill="#34A853"
+            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+          <path fill="#FBBC05"
+            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+          <path fill="#EA4335"
+            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+        </svg>
+        Sign in with Google
+      </button>
+
+      <div class="auth-toggle" id="authToggle">New here? <b>Create Account</b></div>
+    </div>
+  </div>
+
+  <div class="global-status-bar" id="globalStatus"></div>
+
+  <div class="container" id="mainContainer">
+    <div class="header">
+      <div class="title">🧅 Onion Warehouse Pro</div>
+      <div class="subtitle">10–15°C | 65–70% RH | Real-time</div>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card" data-card="temp" id="temp-card">
+        <span class="card-icon">🌡️</span>
+        <div class="card-title">Temperature</div>
+        <div class="card-value" id="temp-value">--°C</div>
+        <span class="trend-arrow" id="temp-trend">↗️</span>
+        <div class="status-badge" id="temp-status">Loading...</div>
+      </div>
+
+      <div class="card" data-card="hum" id="hum-card">
+        <span class="card-icon">💧</span>
+        <div class="card-title">Humidity</div>
+        <div class="card-value" id="hum-value">--%</div>
+        <span class="trend-arrow" id="hum-trend">↗️</span>
+        <div class="status-badge" id="hum-status">Loading...</div>
+      </div>
+
+      <div class="card" data-card="air" id="air-card">
+        <span class="card-icon">🌫</span>
+        <div class="card-title">Air Quality</div>
+        <div class="card-value" id="air-value">-- ppm</div>
+        <span class="trend-arrow" id="air-trend">↗️</span>
+        <div class="status-badge" id="air-status">Loading...</div>
+      </div>
+
+      <div class="card" data-card="cooler">
+        <span class="card-icon">❄️</span>
+        <div class="card-title">Cooler</div>
+        <div class="card-value" id="cooler-value">OFFLINE</div>
+        <span class="trend-arrow" id="cooler-trend">↗️</span>
+        <div class="status-badge" id="cooler-status">Loading...</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="last-updated" id="last-updated">Never</div>
+      <div class="system-status">Auto Climate Control ACTIVE</div>
+      <div style="margin-top: 5px; font-size: 0.8rem; opacity: 0.5;">
+        <a href="/logs" target="_blank" style="color: inherit; text-decoration: none;">View Access Logs</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gas Details Modal -->
+  <div class="gas-details" id="gasDetails">
+    <div class="gas-details-content">
+      <div class="gas-details-header">
+        <div class="gas-details-title">Air Quality Details</div>
+        <span class="gas-details-close" id="gasClose">×</span>
+      </div>
+      <div id="gasList"></div>
+      <button onclick="showGraph()"
+        style="width:100%;padding:16px;background:linear-gradient(135deg,#FF6B9D,#FF8FBF);color:white;border:none;border-radius:0 0 24px 24px;font-size:1.1rem;font-weight:600;cursor:pointer">📊
+        View Graphs</button>
+    </div>
+  </div>
+
+  <!-- Graph Modal -->
+  <div class="graph-modal" id="graphModal">
+    <div class="graph-container">
+      <div class="graph-header">
+        <div class="graph-title">Gas Concentration Trends (Last 24 readings)</div>
+        <span class="graph-close" id="graphClose">×</span>
+      </div>
+      <canvas id="gasChart"></canvas>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    let prevData = { temp: 0, hum: 0, air: 0, co2: 0, nh3: 0, ben: 0, tot: 0, cooler: false };
+    let chart = null;
+    let sensorHistory = { temp: [], hum: [], co2: [], nh3: [], ben: [], times: [] };
+    var pollInterval = null;
+    var historyInterval = null;
+
+    // AUTH STATE
+    let isLoginMode = true;
+    const authOverlay = document.getElementById('authOverlay');
+    const mainContainer = document.getElementById('mainContainer');
+    const authBtn = document.getElementById('authBtn');
+    const authToggle = document.getElementById('authToggle');
+    const authError = document.getElementById('authError');
+    const userInput = document.getElementById('username');
+    const passInput = document.getElementById('password');
+    const passwordToggle = document.getElementById('passwordToggle');
+    const googleBtn = document.getElementById('googleBtn');
+
+    // Password visibility toggle
+    passwordToggle.addEventListener('click', () => {
+      const isPassword = passInput.type === 'password';
+      passInput.type = isPassword ? 'text' : 'password';
+      passwordToggle.textContent = isPassword ? '🙈' : '👁️';
+      passwordToggle.title = isPassword ? 'Hide password' : 'Show password';
+    });
+
+    // Google Sign-In button click
+    googleBtn.addEventListener('click', () => {
+      try {
+        google.accounts.id.initialize({
+          client_id: '1074268097227-pkt1r0op1e2khjb1c9cdap4ggrgcmf8j.apps.googleusercontent.com',
+          callback: handleCredentialResponse
+        });
+        google.accounts.id.prompt();
+      } catch (e) {
+        showError('Google Sign-In not available. Check your Client ID.');
+      }
+    });
+
+    // Google Login Callback
+    async function handleCredentialResponse(response) {
+      try {
+        const res = await fetch('/api/google-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: response.credential })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          localStorage.setItem('onion_token', data.token);
+          localStorage.setItem('onion_user', data.username);
+          authOverlay.classList.add('hidden');
+          mainContainer.classList.add('logged-in');
+          startPolling();
+        } else {
+          showError(data.msg || 'Google Login failed');
+        }
+      } catch (e) {
+        showError('Google Login error. Is backend running?');
+      }
+    }
+
+    // Check session
+    if (localStorage.getItem('onion_token')) {
+      authOverlay.classList.add('hidden');
+      mainContainer.classList.add('logged-in');
+      startPolling();
+    }
+
+    authToggle.addEventListener('click', () => {
+      isLoginMode = !isLoginMode;
+      document.querySelector('.auth-title').textContent = isLoginMode ? 'Welcome Back' : 'Create Account';
+      document.querySelector('.auth-subtitle').textContent = isLoginMode ? 'Login to access Onion Warehouse Pro' : 'Sign up to monitor your warehouse';
+      authBtn.textContent = isLoginMode ? 'LOGIN' : 'SIGN UP';
+      authToggle.innerHTML = isLoginMode ? 'New here? <b>Create Account</b>' : 'Already have an account? <b>Login</b>';
+      authError.style.display = 'none';
+    });
+
+    authBtn.addEventListener('click', async () => {
+      const u = userInput.value;
+      const p = passInput.value;
+
+      if (!u || !p) {
+        showError('Please fill in all fields');
+        return;
+      }
+
+      const endpoint = isLoginMode ? '/api/login' : '/api/signup';
+
+      try {
+        authBtn.textContent = '...';
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u, password: p })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          if (isLoginMode) {
+            localStorage.setItem('onion_token', data.token);
+            localStorage.setItem('onion_user', data.username);
+            authOverlay.classList.add('hidden');
+            mainContainer.classList.add('logged-in');
+            startPolling();
+          } else {
+            alert('Account created! Please login.');
+            isLoginMode = true;
+            location.reload();
+          }
+        } else {
+          showError(data.msg || 'Authentication failed');
+        }
+      } catch (e) {
+        console.error('Login/Signup error:', e);
+        showError('Server Error. Please check Render Logs.');
+      } finally {
+        authBtn.textContent = isLoginMode ? 'LOGIN' : 'SIGN UP';
+      }
+    });
+
+    function showError(msg) {
+      authError.textContent = msg;
+      authError.style.display = 'block';
+      authError.style.animation = 'pulseDanger 0.5s';
+    }
+
+    const els = {
+      temp: { value: document.getElementById('temp-value'), trend: document.getElementById('temp-trend'), status: document.getElementById('temp-status') },
+      hum: { value: document.getElementById('hum-value'), trend: document.getElementById('hum-trend'), status: document.getElementById('hum-status') },
+      air: { value: document.getElementById('air-value'), trend: document.getElementById('air-trend'), status: document.getElementById('air-status') },
+      cooler: { value: document.getElementById('cooler-value'), trend: document.getElementById('cooler-trend'), status: document.getElementById('cooler-status') }
+    };
+
+    const lastUpdatedEl = document.getElementById('last-updated');
+    const globalStatus = document.getElementById('globalStatus');
+    const airCard = document.getElementById('air-card');
+    const gasDetails = document.getElementById('gasDetails');
+    const graphModal = document.getElementById('graphModal');
+
+    function getStatus(v, t) {
+      if (t === 'temp') return v >= 10 && v <= 15 ? { cls: 'good', txt: 'Normal' } : v > 15 && v < 20 ? { cls: 'warning', txt: 'Warning' } : { cls: 'danger', txt: 'Danger' };
+      if (t === 'hum') return v >= 65 && v <= 70 ? { cls: 'good', txt: 'Normal' } : (v > 60 && v < 65 || v > 70 && v < 75) ? { cls: 'warning', txt: 'Warning' } : { cls: 'danger', txt: 'Danger' };
+      if (t === 'air') return v < 400 ? { cls: 'good', txt: 'Good' } : v < 700 ? { cls: 'warning', txt: 'Moderate' } : { cls: 'danger', txt: 'Poor' };
+      if (t === 'cooler') return v ? { cls: 'good', txt: 'RUNNING' } : { cls: 'warning', txt: 'STANDBY' };
+    }
+
+    function showGasDetails() {
+      const co2 = (prevData.co2 || 0).toFixed(0);
+      const nh3 = (prevData.nh3 || 0).toFixed(0);
+      const ben = (prevData.ben || 0).toFixed(0);
+      const total = parseInt(co2) + parseInt(nh3) + parseInt(ben);
+
+      document.getElementById('gasList').innerHTML = `
+    <div class="gas-gas"><div class="gas-name">CO₂</div><div class="gas-value">${co2} ppm</div></div>
+    <div class="gas-gas"><div class="gas-name">NH₃</div><div class="gas-value">${nh3} ppm</div></div>
+    <div class="gas-gas"><div class="gas-name">Benzene</div><div class="gas-value">${ben} ppm</div></div>
+    <div class="gas-gas"><div class="gas-name">Total</div><div class="gas-value">${total.toLocaleString()} ppm</div></div>
+  `;
+      gasDetails.classList.add('active');
+      airCard.classList.add('active');
+    }
+
+    function hideGasDetails() {
+      gasDetails.classList.remove('active');
+      airCard.classList.remove('active');
+    }
+
+    function showGraph(type = 'air') {
+      gasDetails.classList.remove('active');
+      graphModal.classList.add('active');
+      updateChart(type);
+    }
+
+    function hideGraph() {
+      graphModal.classList.remove('active');
+    }
+
+    function updateChart(type) {
+      const ctx = document.getElementById('gasChart').getContext('2d');
+      if (chart) chart.destroy();
+
+      let datasets = [];
+      let title = "";
+
+      if (type === 'temp') {
+        title = "Temperature Trend (°C)";
+        datasets = [{
+          label: 'Temperature',
+          data: sensorHistory.temp,
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239,68,68,0.1)',
+          tension: 0.4,
+          fill: true
+        }];
+      } else if (type === 'hum') {
+        title = "Humidity Trend (%)";
+        datasets = [{
+          label: 'Humidity',
+          data: sensorHistory.hum,
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59,130,246,0.1)',
+          tension: 0.4,
+          fill: true
+        }];
+      } else {
+        title = "Gas Concentration Trends (ppm)";
+        datasets = [
+          { label: 'CO₂', data: sensorHistory.co2, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', tension: 0.4, fill: false },
+          { label: 'NH₃', data: sensorHistory.nh3, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.4, fill: false },
+          { label: 'Benzene', data: sensorHistory.ben, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', tension: 0.4, fill: false }
+        ];
+      }
+
+      document.querySelector('.graph-title').textContent = title;
+
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: sensorHistory.times,
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { ticks: { maxTicksLimit: 12, color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+            y: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+          },
+          plugins: { legend: { labels: { color: 'white', usePointStyle: true } } }
+        }
+      });
+    }
+
+    async function updateData() {
+      const token = localStorage.getItem('onion_token');
+      if (!token) return;
+
+      try {
+        // Fetch latest reading
+        const res = await fetch('/api/latest', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.status === 401) {
+          localStorage.removeItem('onion_token');
+          window.location.reload();
+        }
+        const data = await res.json();
+        const coolerState = data.c || 1;
+
+        // Safely extract gas values
+        const co2 = parseFloat(data.CO2 || data.co2 || 0) || 0;
+        const nh3 = parseFloat(data.NH3 || data.nh3 || 0) || 0;
+        const ben = parseFloat(data.Ben || data.ben || 0) || 0;
+        const totalAir = co2 + nh3 + ben;
+
+        els.temp.value.textContent = (data.T || data.temp || 0).toFixed(1) + '°C';
+        els.hum.value.textContent = Math.round(data.H || data.hum || 0) + '%';
+        els.air.value.textContent = Math.round(totalAir).toLocaleString() + ' ppm';
+        els.cooler.value.textContent = coolerState ? 'RUNNING' : 'STANDBY';
+
+        const newData = {
+          temp: parseFloat(data.T || data.temp || 0),
+          hum: parseFloat(data.H || data.hum || 0),
+          air: totalAir,
+          co2: co2,
+          nh3: nh3,
+          ben: ben,
+          cooler: coolerState
+        };
+        const now = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+        sensorHistory.times.push(now);
+        sensorHistory.temp.push(newData.temp);
+        sensorHistory.hum.push(newData.hum);
+        sensorHistory.co2.push(co2);
+        sensorHistory.nh3.push(nh3);
+        sensorHistory.ben.push(ben);
+        Object.values(sensorHistory).forEach(arr => { if (arr.length > 24) arr.shift(); });
+
+        const airDiff = totalAir - prevData.air;
+        const tempDiff = newData.temp - prevData.temp;
+        const humDiff = newData.hum - prevData.hum;
+
+        prevData = newData;
+
+        ['temp', 'hum', 'air'].forEach(k => {
+          let diff = 0;
+          if (k === 'temp') diff = tempDiff;
+          else if (k === 'hum') diff = humDiff;
+          else diff = airDiff;
+
+          const el = els[k].trend;
+          el.textContent = Math.abs(diff) < 0.1 ? '↔️' : diff > 0 ? '↗️' : '↘️';
+          el.className = 'trend-arrow ' + (diff > 0 ? 'trend-up' : diff < 0 ? 'trend-down' : '');
+        });
+
+        ['temp', 'hum', 'air'].forEach(k => {
+          const val = k === 'temp' ? newData.temp : k === 'hum' ? newData.hum : totalAir;
+          const s = getStatus(val, k);
+          els[k].status.textContent = s.txt;
+          els[k].status.className = 'status-badge status-' + s.cls;
+        });
+
+        const c = getStatus(coolerState, 'cooler');
+        els.cooler.status.textContent = c.txt;
+        els.cooler.status.className = 'status-badge status-' + c.cls;
+
+        let issues = 0;
+        if (newData.temp > 15 || newData.temp < 10) issues++;
+        if (newData.hum < 65 || newData.hum > 70) issues++;
+        if (totalAir >= 400) issues++;
+        globalStatus.style.background = issues === 0 ? 'linear-gradient(90deg,#22c55e,#10b981)' :
+          issues === 1 ? 'linear-gradient(90deg,#f59e0b,#d97706)' :
+            'linear-gradient(90deg,#ef4444,#dc2626)';
+
+        lastUpdatedEl.textContent = 'Updated: ' + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+      } catch (e) {
+        console.error('Data fetch error:', e);
+        showDashboardError('Data Fetch Error: ' + e.message);
+        Object.values(els).forEach(e => {
+          e.value.textContent = '--';
+          e.status.textContent = 'Offline';
+          e.status.className = 'status-badge status-danger';
+          e.trend.textContent = '↔️';
+        });
+        globalStatus.style.background = 'linear-gradient(90deg,#6b7280,#4b5563)';
+        lastUpdatedEl.textContent = 'ESP32 Offline';
+      }
+    }
+
+    function showDashboardError(msg) {
+      const errEl = document.getElementById('dashboard-error') || (() => {
+        const el = document.createElement('div');
+        el.id = 'dashboard-error';
+        el.style.cssText = 'background:#ef4444;color:white;padding:10px;text-align:center;position:fixed;top:4px;left:0;right:0;z-index:2000;font-size:0.8rem';
+        document.body.appendChild(el);
+        return el;
+      })();
+      errEl.textContent = msg;
+      errEl.style.display = 'block';
+    }
+
+    async function updateHistory() {
+      const token = localStorage.getItem('onion_token');
+      if (!token) return;
+      try {
+        const res = await fetch('/api/readings', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const readings = await res.json();
+
+        if (!Array.isArray(readings)) {
+          console.warn('History is not yet available');
+          return;
+        }
+
+        sensorHistory.times = readings.map(r => r.time);
+        sensorHistory.temp = readings.map(r => r.temp);
+        sensorHistory.hum = readings.map(r => r.hum);
+        sensorHistory.co2 = readings.map(r => r.co2);
+        sensorHistory.nh3 = readings.map(r => r.nh3);
+        sensorHistory.ben = readings.map(r => r.ben);
+      } catch (e) {
+        console.error('History fetch error:', e);
+      }
+    }
+
+    function startPolling() {
+      if (pollInterval) clearInterval(pollInterval);
+      if (historyInterval) clearInterval(historyInterval);
+      updateData();
+      updateHistory();
+      pollInterval = setInterval(updateData, 3000);
+      historyInterval = setInterval(updateHistory, 30000); // 30s
+    }
+
+    // Event listeners
+    document.getElementById('temp-card').addEventListener('click', () => showGraph('temp'));
+    document.getElementById('hum-card').addEventListener('click', () => showGraph('hum'));
+    airCard.addEventListener('click', showGasDetails);
+    document.getElementById('gasClose').addEventListener('click', hideGasDetails);
+    document.getElementById('graphClose').addEventListener('click', hideGraph);
+    document.addEventListener('click', (e) => {
+      if (e.target === gasDetails) hideGasDetails();
+      if (e.target === graphModal) hideGraph();
+    });
+  </script>
+</body>
+
+</html>
